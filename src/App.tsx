@@ -1,25 +1,41 @@
 import React from 'react';
-import logo from './logo.svg';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/layout/Layout';
+import HomePage from './pages/HomePage';
+import TeacherListPage from './pages/TeacherListPage';
+import ChatPage from './pages/ChatPage';
+import UserProfilePage from './pages/UserProfilePage';
+import MaterialsPage from './pages/MaterialsPage';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={
+          <Layout>
+            <HomePage />
+          </Layout>
+        } />
+        <Route path="/teachers" element={
+          <Layout>
+            <TeacherListPage />
+          </Layout>
+        } />
+        <Route path="/teachers/:teacherId/chat" element={<ChatPage />} />
+        <Route path="/user" element={
+          <Layout>
+            <UserProfilePage />
+          </Layout>
+        } />
+        <Route path="/knowledge/materials" element={
+          <Layout>
+            <MaterialsPage />
+          </Layout>
+        } />
+        {/* Add more routes as needed */}
+      </Routes>
+    </Router>
   );
 }
 

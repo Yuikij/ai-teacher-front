@@ -1,46 +1,102 @@
-# Getting Started with Create React App
+# AI教师平台前端
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+这是一个AI教师平台的前端项目，使用React和TypeScript开发。该平台旨在提供个性化学习体验，让用户可以选择AI教师，进行一对一学习指导。
 
-## Available Scripts
+## 项目功能
 
-In the project directory, you can run:
+### 教师系统
+- 教师列表：浏览和筛选AI教师
+- 教师对话：与AI教师进行实时对话
+- 练习题：教师可以为学生出题并提供反馈
 
-### `npm start`
+### 知识库系统
+- 学习资料：浏览和查阅各学科资料
+- 题库：根据科目和难度筛选练习题
+- 学习笔记：记录和管理个人笔记
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### 个人系统
+- 个人信息：管理用户资料
+- 学习记录：追踪学习历史和进度
+- 学习目标：设置和监控学习目标
+- 课程安排：查看和编辑学习时间表
+- 日常任务：管理每日学习计划
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 如何运行
 
-### `npm test`
+1. 安装依赖
+```
+npm install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+2. 启动开发服务器
+```
+npm start
+```
 
-### `npm run build`
+## 技术栈
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- React
+- TypeScript
+- React Router
+- FontAwesome (图标)
+- Mock.js (模拟API数据)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 代码结构
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- `/src/components` - 组件目录
+  - `/layout` - 布局组件（页头、页脚等）
+  - `/teacher` - 教师相关组件
+  - `/knowledge` - 知识库相关组件
+  - `/user` - 用户相关组件
+- `/src/pages` - 页面组件
+- `/src/services` - API服务和模拟数据
+- `/src/utils` - 工具函数
 
-### `npm run eject`
+## 项目结构
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```
+ai-teacher-front/
+├── public/                  # 静态文件
+├── src/
+│   ├── assets/              # 图片、图标等资源
+│   │   ├── layout/          # 布局相关组件
+│   │   ├── teacher/         # 教师相关组件
+│   │   ├── knowledge/       # 知识库相关组件
+│   │   └── user/            # 用户相关组件
+│   ├── pages/               # 页面组件
+│   ├── services/            # API服务和Mock数据
+│   ├── utils/               # 工具函数
+│   ├── App.tsx              # 应用入口组件
+│   └── index.tsx            # 应用渲染入口
+├── package.json
+└── tailwind.config.js       # Tailwind CSS配置
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 功能模块
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### 教师系统
+- 教师列表页面：浏览和筛选AI教师
+- 教师详情页面：查看教师详细信息
+- 对话页面：与教师实时对话
+- 练习页面：完成教师布置的练习题
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### 知识库系统
+- 资料页面：浏览学习资料
+- 题库页面：浏览和练习题目
+- 笔记页面：管理学习笔记
 
-## Learn More
+### 我的系统
+- 个人信息页面：查看和编辑个人资料
+- 学习记录页面：查看学习历史和进度
+- 学习目标页面：设置和跟踪学习目标
+- 课程安排页面：查看和编辑课程时间表
+- 本日计划页面：查看和完成每日学习任务
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 后续开发计划
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- 添加更多的知识领域和教师
+- 实现真实的后端API连接
+- 添加用户认证系统
+- 开发移动端适配
+- 添加更多交互功能，如语音对话
+- 实现习题自动批改功能
