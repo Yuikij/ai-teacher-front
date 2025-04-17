@@ -21,7 +21,7 @@ const testConfig: EnvConfig = {
 
 // 生产环境配置
 const prodConfig: EnvConfig = {
-  API_BASE_URL: 'http://111.229.156.21:18080',
+  API_BASE_URL: 'https://teacher.yuisama.top:9002',
   API_TIMEOUT: 30000,
 };
 
