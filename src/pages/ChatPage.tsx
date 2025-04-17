@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faMicrophone, faImage, faFile, faEllipsisH, faQuestionCircle, faBookOpen, faTasks } from '@fortawesome/free-solid-svg-icons';
+import { chatApi } from '../services/api';
+import { processTextStream } from '../utils/streamUtils';
 
 // Mock data for teachers
 const MOCK_TEACHERS = [
@@ -67,6 +69,7 @@ const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load teacher data
@@ -95,14 +98,15 @@ const ChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     
     if (!inputMessage.trim()) return;
     
     // Add user message
+    const userMessageId = Date.now().toString();
     const newUserMessage: Message = {
-      id: Date.now().toString(),
+      id: userMessageId,
       sender: 'user',
       content: inputMessage,
       timestamp: new Date(),
@@ -112,40 +116,94 @@ const ChatPage: React.FC = () => {
     setInputMessage('');
     setIsTyping(true);
     
-    // Simulate teacher response after a delay
-    setTimeout(() => {
-      const teacherResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'teacher',
-        content: generateTeacherResponse(inputMessage),
-        timestamp: new Date(),
-      };
+    // Create an initial empty message for the teacher's response
+    const teacherMessageId = (Date.now() + 1).toString();
+    const teacherMessage: Message = {
+      id: teacherMessageId,
+      sender: 'teacher',
+      content: '',
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, teacherMessage]);
+    setStreamingMessageId(teacherMessageId);
+    
+    try {
+      // 调用真实API获取流式响应
+      const stream = await chatApi.streamChat(inputMessage);
       
-      setMessages(prev => [...prev, teacherResponse]);
+      // 处理流式响应
+      if (stream) {
+        // 用于累积消息内容
+        let fullContent = '';
+        
+        await processTextStream(
+          stream,
+          // 每接收到一块数据时更新消息内容
+          (chunk) => {
+            // 累积内容
+            fullContent += chunk;
+            
+            // 处理可能的换行
+            const formattedContent = fullContent
+              .replace(/\n/g, '<br>') // 将换行符转换为HTML换行
+              .replace(/<br><br>/g, '<br>'); // 防止多余的换行
+            
+            setMessages(prev => {
+              return prev.map(msg => 
+                msg.id === teacherMessageId
+                  ? { ...msg, content: formattedContent }
+                  : msg
+              );
+            });
+          },
+          // 接收完成时
+          () => {
+            // 最终内容处理，移除可能残留的HTML转义问题
+            const finalContent = fullContent
+              .replace(/&nbsp;/g, ' ') // 处理可能的&nbsp;
+              .replace(/<br><br>/g, '<br>'); // 防止多余的换行
+              
+            setMessages(prev => {
+              return prev.map(msg => 
+                msg.id === teacherMessageId
+                  ? { ...msg, content: finalContent }
+                  : msg
+              );
+            });
+            
+            setIsTyping(false);
+            setStreamingMessageId(null);
+          },
+          // 错误处理
+          (error) => {
+            console.error('Error in stream processing:', error);
+            setIsTyping(false);
+            setStreamingMessageId(null);
+            
+            // 更新消息状态为错误
+            setMessages(prev => prev.map(msg => 
+              msg.id === teacherMessageId
+                ? { ...msg, content: '抱歉，我遇到了一些问题，请稍后再试。', status: 'error' }
+                : msg
+            ));
+          }
+        );
+      } else {
+        throw new Error('Stream is null');
+      }
+    } catch (error) {
+      console.error('Failed to get response:', error);
       setIsTyping(false);
-    }, 1500);
-  };
-
-  // Simple response generator (would be replaced by actual AI response)
-  const generateTeacherResponse = (question: string): string => {
-    // Very simple mock response based on keywords
-    if (question.toLowerCase().includes('你好') || question.toLowerCase().includes('您好')) {
-      return `您好！有什么我可以帮助您的吗？`;
+      setStreamingMessageId(null);
+      
+      // 更新消息状态为错误
+      setMessages(prev => prev.map(msg => 
+        msg.id === teacherMessageId
+          ? { ...msg, content: '抱歉，我无法连接到服务器，请检查网络连接或稍后再试。', status: 'error' }
+          : msg
+      ));
     }
-    
-    if (question.toLowerCase().includes('谢谢') || question.toLowerCase().includes('感谢')) {
-      return `不客气！如果还有其他问题，随时可以问我。`;
-    }
-    
-    if (question.toLowerCase().includes('题目') || question.toLowerCase().includes('练习')) {
-      return `好的，我可以为您准备一些练习题。请问您想要什么难度的题目？初级、中级还是高级？`;
-    }
-    
-    if (question.toLowerCase().includes('概念') || question.toLowerCase().includes('解释')) {
-      return `这是一个很好的问题！这个概念可以这样理解：它是指...（此处会是详细的概念解释）`;
-    }
-    
-    return `您的问题很有价值。基于我的理解，可以从以下几个方面来思考：\n\n1. 首先...（此处会是针对问题的详细回答）\n\n2. 其次...\n\n3. 最后...\n\n希望这个回答对您有所帮助！如果有任何不清楚的地方，请随时追问。`;
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -213,9 +271,14 @@ const ChatPage: React.FC = () => {
                   message.sender === 'user' 
                     ? 'bg-blue-600 text-white rounded-tr-none' 
                     : 'bg-white text-gray-800 border rounded-tl-none shadow-sm'
-                }`}
+                } ${message.status === 'error' ? 'border-red-300' : ''}`}
               >
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                <div 
+                  className="whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ 
+                    __html: message.content || (message.id === streamingMessageId ? ' ' : '') 
+                  }}
+                />
                 <div 
                   className={`text-xs mt-1 text-right ${
                     message.sender === 'user' ? 'text-blue-200' : 'text-gray-500'
@@ -235,7 +298,7 @@ const ChatPage: React.FC = () => {
             </div>
           ))}
           
-          {isTyping && (
+          {isTyping && !streamingMessageId && (
             <div className="flex mb-4 justify-start">
               <img 
                 src={teacher.avatar} 
@@ -291,19 +354,20 @@ const ChatPage: React.FC = () => {
                       handleSendMessage();
                     }
                   }}
+                  disabled={isTyping}
                 />
               </div>
               <div className="flex items-center px-3 py-2 border-t">
-                <button type="button" className="p-1 text-gray-500 hover:text-gray-700">
+                <button type="button" className="p-1 text-gray-500 hover:text-gray-700" disabled={isTyping}>
                   <FontAwesomeIcon icon={faImage} />
                 </button>
-                <button type="button" className="p-1 ml-2 text-gray-500 hover:text-gray-700">
+                <button type="button" className="p-1 ml-2 text-gray-500 hover:text-gray-700" disabled={isTyping}>
                   <FontAwesomeIcon icon={faFile} />
                 </button>
-                <button type="button" className="p-1 ml-2 text-gray-500 hover:text-gray-700">
+                <button type="button" className="p-1 ml-2 text-gray-500 hover:text-gray-700" disabled={isTyping}>
                   <FontAwesomeIcon icon={faMicrophone} />
                 </button>
-                <button type="button" className="p-1 ml-2 text-gray-500 hover:text-gray-700">
+                <button type="button" className="p-1 ml-2 text-gray-500 hover:text-gray-700" disabled={isTyping}>
                   <FontAwesomeIcon icon={faEllipsisH} />
                 </button>
               </div>
@@ -311,7 +375,7 @@ const ChatPage: React.FC = () => {
             <button 
               type="submit"
               className="ml-3 px-4 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              disabled={!inputMessage.trim()}
+              disabled={!inputMessage.trim() || isTyping}
             >
               <FontAwesomeIcon icon={faPaperPlane} />
             </button>
